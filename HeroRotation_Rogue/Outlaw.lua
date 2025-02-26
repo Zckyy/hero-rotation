@@ -194,56 +194,49 @@ end
 
 -- RtB rerolling strategy, return true if we should reroll
 local function RtB_Reroll(ForceLoadedDice)
-  if not Cache.APLVar.RtB_Reroll then
-    -- 1+ Buff
-    if Settings.Outlaw.RolltheBonesLogic == "1+ Buff" then
-      Cache.APLVar.RtB_Reroll = (Cache.APLVar.RtB_Buffs.Total <= 0) and true or false
-      -- Broadside
-    elseif Settings.Outlaw.RolltheBonesLogic == "Broadside" then
-      Cache.APLVar.RtB_Reroll = (not Player:BuffUp(S.Broadside)) and true or false
-      -- Buried Treasure
-    elseif Settings.Outlaw.RolltheBonesLogic == "Buried Treasure" then
-      Cache.APLVar.RtB_Reroll = (not Player:BuffUp(S.BuriedTreasure)) and true or false
-      -- Grand Melee
-    elseif Settings.Outlaw.RolltheBonesLogic == "Grand Melee" then
-      Cache.APLVar.RtB_Reroll = (not Player:BuffUp(S.GrandMelee)) and true or false
-      -- Skull and Crossbones
-    elseif Settings.Outlaw.RolltheBonesLogic == "Skull and Crossbones" then
-      Cache.APLVar.RtB_Reroll = (not Player:BuffUp(S.SkullandCrossbones)) and true or false
-      -- Ruthless Precision
-    elseif Settings.Outlaw.RolltheBonesLogic == "Ruthless Precision" then
-      Cache.APLVar.RtB_Reroll = (not Player:BuffUp(S.RuthlessPrecision)) and true or false
-      -- True Bearing
-    elseif Settings.Outlaw.RolltheBonesLogic == "True Bearing" then
-      Cache.APLVar.RtB_Reroll = (not Player:BuffUp(S.TrueBearing)) and true or false
-      -- SimC Default
-    else
-      Cache.APLVar.RtB_Reroll = false
-
-      -- # Roll the bones if you have no buffs, or will lose no buffs by rolling. With Loaded Dice up, roll if you have
-      -- 1 buff or will lose at most 1 buff.
-      -- roll_the_bones,if=rtb_buffs.will_lose<=buff.loaded_dice.up
-      Cache.APLVar.RtB_Reroll = Cache.APLVar.RtB_Buffs.Will_Lose.Total <= num(Player:BuffUp(S.LoadedDiceBuff))
-
-      -- # KIR builds can also roll with Loaded Dice up and at most 2 buffs in total
-      -- actions.cds+=/roll_the_bones,if=talent.keep_it_rolling&buff.loaded_dice.up&rtb_buffs<=2
-      if not Cache.APLVar.RtB_Reroll then
-        Cache.APLVar.RtB_Reroll = S.KeepItRolling:IsAvailable() and (Player:BuffUp(S.LoadedDiceBuff) or ForceLoadedDice) and Cache.APLVar.RtB_Buffs.Total <= 2
-      end
-
-      -- # HO builds can fish for good buffs by rerolling with 2 buffs and Loaded Dice up if those 2 buffs do not
-      -- contain either Broadside, Ruthless Precision or True Bearing
-      --actions.cds+=/roll_the_bones,if=talent.hidden_opportunity&buff.loaded_dice.up&rtb_buffs<=2&!buff.broadside.up
-      -- &!buff.ruthless_precision.up&!buff.true_bearing.up
-      if not Cache.APLVar.RtB_Reroll then
-        Cache.APLVar.RtB_Reroll = S.HiddenOpportunity:IsAvailable() and Player:BuffUp(S.LoadedDiceBuff) and Cache.APLVar.RtB_Buffs.Total <= 2
-          and not Player:BuffUp(S.Broadside) and not Player:BuffUp(S.RuthlessPrecision) and not Player:BuffUp(S.TrueBearing)
-      end
-    end
+  if Cache.APLVar.RtB_Reroll ~= nil then
+      return Cache.APLVar.RtB_Reroll
   end
 
+  local logic = Settings.Outlaw.RolltheBonesLogic
+  local buffs = Cache.APLVar.RtB_Buffs
+  local player = Player
+  local buffCheck = {
+      ["1+ Buff"] = buffs.Total <= 0,
+      ["Broadside"] = not player:BuffUp(S.Broadside),
+      ["Buried Treasure"] = not player:BuffUp(S.BuriedTreasure),
+      ["Grand Melee"] = not player:BuffUp(S.GrandMelee),
+      ["Skull and Crossbones"] = not player:BuffUp(S.SkullandCrossbones),
+      ["Ruthless Precision"] = not player:BuffUp(S.RuthlessPrecision),
+      ["True Bearing"] = not player:BuffUp(S.TrueBearing)
+  }
+  
+  -- Check predefined buff conditions
+  if buffCheck[logic] ~= nil then
+      Cache.APLVar.RtB_Reroll = buffCheck[logic]
+      return Cache.APLVar.RtB_Reroll
+  end
+
+  -- Default SimC logic
+  local loadedDiceUp = player:BuffUp(S.LoadedDiceBuff)
+  Cache.APLVar.RtB_Reroll = buffs.Will_Lose.Total <= num(loadedDiceUp)
+  
+  -- KIR build logic
+  if not Cache.APLVar.RtB_Reroll then
+      Cache.APLVar.RtB_Reroll = S.KeepItRolling:IsAvailable() and (loadedDiceUp or ForceLoadedDice) and buffs.Total <= 2
+  end
+  
+  -- HO build logic
+  if not Cache.APLVar.RtB_Reroll then
+      Cache.APLVar.RtB_Reroll = S.HiddenOpportunity:IsAvailable() and loadedDiceUp and buffs.Total <= 2
+          and not player:BuffUp(S.Broadside)
+          and not player:BuffUp(S.RuthlessPrecision)
+          and not player:BuffUp(S.TrueBearing)
+  end
+  
   return Cache.APLVar.RtB_Reroll
 end
+
 
 -- # Use finishers if at -1 from max combo points, or -2 in Stealth with Crackshot
 local function Finish_Condition ()
