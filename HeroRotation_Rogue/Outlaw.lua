@@ -303,6 +303,21 @@ local function Stealth(ReturnSpellOnly)
     end
   end
 
+
+  -- Is this better? Not sure if cleaner to read.
+  -- if not (S.Dispatch:IsReady() and Finish_Condition()) then
+  --   return
+  -- end
+  
+  -- if ReturnSpellOnly then
+  --   return S.Dispatch
+  -- end
+  
+  -- if CastPooling(S.Dispatch, nil, not Target:IsSpellInRange(S.Dispatch)) then
+  --   return "Cast Dispatch (Stealth)"
+  -- end
+  
+
   -- # 2 Fan the Hammer Crackshot builds can consume Opportunity in stealth with max stacks, Broadside, and low CPs, or with Greenskins active
   -- actions.stealth+=/pistol_shot,if=talent.crackshot&talent.fan_the_hammer.rank>=2&buff.opportunity.stack>=6
   -- &(buff.broadside.up&combo_points<=1|buff.greenskins_wickers.up)
@@ -971,13 +986,6 @@ local function APL ()
 
   -- Poisons
   Rogue.Poisons()
-
-  -- Bottled Flayedwing Toxin
-  if I.BottledFlayedwingToxin:IsEquippedAndReady() and Player:BuffDown(S.FlayedwingToxin) then
-    if Cast(I.BottledFlayedwingToxin, nil, Settings.CommonsDS.DisplayStyle.Trinkets) then
-      return "Bottled Flayedwing Toxin";
-    end
-  end
 
   -- Out of Combat
   if not Player:AffectingCombat() and S.Vanish:TimeSinceLastCast() > 1 then
