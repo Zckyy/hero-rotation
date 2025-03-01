@@ -958,6 +958,7 @@ local function APL ()
   -- Local Update
   RtB_Buffs()
   BladeFlurryRange = 8
+  KillingSpreeActionable = false -- we could use this later to check if its the right time to ks
   ComboPoints = Player:ComboPoints()
   ChargedComboPoints = Player:ChargedComboPoints()
   EffectiveComboPoints = Rogue.EffectiveComboPoints(ComboPoints)
@@ -1157,8 +1158,7 @@ local function APL ()
 end
 
 local function Init ()
-  HR.Print("Outlaw Rogue rotation has been updated for patch 11.0.5 \n ",
-    "Note: It is known & Intended that Audacity procs will suggest Sinister Strike without a keybind shown")
+  HR.Print("Outlaw Rogue rotation has been updated for patch 11.1.")
 end
 
 HR.SetAPL(260, APL, Init)
