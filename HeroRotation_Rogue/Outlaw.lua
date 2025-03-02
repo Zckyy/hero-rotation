@@ -356,65 +356,59 @@ local function Stealth(ReturnSpellOnly)
 end
 
 local function Finish(ReturnSpellOnly)
-  -- # Use Between the Eyes to keep the crit buff up, but on cooldown if Improved/Greenskins, and avoid overriding Greenskins
-  -- actions.finish=between_the_eyes,if=!talent.crackshot
-  -- &(buff.between_the_eyes.remains<4|talent.improved_between_the_eyes|talent.greenskins_wickers)
-  -- &!buff.greenskins_wickers.up
-  if S.BetweentheEyes:IsReady() and not S.Crackshot:IsAvailable()
-    and (Player:BuffRemains(S.BetweentheEyes) < 4 or S.ImprovedBetweenTheEyes:IsAvailable() or S.GreenskinsWickers:IsAvailable())
-    and Player:BuffDown(S.GreenskinsWickers) then
+  -- Helper function to handle spell casting (or return the spell if in lookup mode)
+  local function attemptCast(spell, castMessage)
     if ReturnSpellOnly then
-      return S.BetweentheEyes
-    else
-      if CastPooling(S.BetweentheEyes, nil, not Target:IsSpellInRange(S.BetweentheEyes)) then
-        return "Cast Between the Eyes (Finish)"
-      end
+      return spell
+    elseif CastPooling(spell, nil, not Target:IsSpellInRange(spell)) then
+      return castMessage
     end
   end
 
-  -- # Crackshot builds use Between the Eyes outside of Stealth to refresh the Between the Eyes crit buff or on cd with the Ruthless Precision buff
-  -- actions.finish+=/between_the_eyes,if=talent.crackshot&(buff.ruthless_precision.up|buff.between_the_eyes.remains<4|!talent.keep_it_rolling|!talent.mean_streak)
+  -- Check Between the Eyes only once since it must be ready.
   if S.BetweentheEyes:IsReady() then
-    if S.Crackshot:IsAvailable() and (Player:BuffUp(S.RuthlessPrecision) or Player:BuffRemains(S.BetweentheEyes) < 4
-    or not S.KeepItRolling:IsAvailable() or not S.MeanStreak:IsAvailable()) then
-      if ReturnSpellOnly then
-        return S.BetweentheEyes
-      else
-        if CastPooling(S.BetweentheEyes, nil, not Target:IsSpellInRange(S.BetweentheEyes)) then
-          return "Cast Between the Eyes (Crackshot OOS)"
-        end
-      end
+    -- Use Between the Eyes for non-Crackshot builds
+    if not S.Crackshot:IsAvailable() 
+      and (Player:BuffRemains(S.BetweentheEyes) < 4 
+           or S.ImprovedBetweenTheEyes:IsAvailable() 
+           or S.GreenskinsWickers:IsAvailable())
+      and Player:BuffDown(S.GreenskinsWickers) then
+      local result = attemptCast(S.BetweentheEyes, "Cast Between the Eyes (Finish)")
+      if result then return result end
+
+    -- For Crackshot builds, use Between the Eyes outside of Stealth under specific conditions
+    elseif S.Crackshot:IsAvailable() 
+      and (Player:BuffUp(S.RuthlessPrecision) 
+           or Player:BuffRemains(S.BetweentheEyes) < 4 
+           or not S.KeepItRolling:IsAvailable() 
+           or not S.MeanStreak:IsAvailable()) then
+      local result = attemptCast(S.BetweentheEyes, "Cast Between the Eyes (Crackshot OOS)")
+      if result then return result end
     end
   end
 
+  -- Cold Blood uses a different casting function
   if S.ColdBlood:IsReady() and Player:BuffDown(S.ColdBlood) then
-    if Cast(S.ColdBlood, Settings.CommonsOGCD.OffGCDasOffGCD.ColdBlood) then
+    if ReturnSpellOnly then
+      return S.ColdBlood
+    elseif Cast(S.ColdBlood, Settings.CommonsOGCD.OffGCDasOffGCD.ColdBlood) then
       return "Cast Cold Blood"
     end
   end
 
-  -- actions.finish+=/coup_de_grace
+  -- Attempt Coup de Grace
   if S.CoupDeGrace:IsReady() then
-    if ReturnSpellOnly then
-      return S.CoupDeGrace
-    else
-      if CastPooling(S.CoupDeGrace, nil, not Target:IsSpellInRange(S.CoupDeGrace)) then
-        return "Cast Coup de Grace"
-      end
-    end
+    local result = attemptCast(S.CoupDeGrace, "Cast Coup de Grace")
+    if result then return result end
   end
 
-  -- actions.finish+=/dispatch
+  -- Attempt Dispatch
   if S.Dispatch:IsReady() then
-    if ReturnSpellOnly then
-      return S.Dispatch
-    else
-      if CastPooling(S.Dispatch, nil, not Target:IsSpellInRange(S.Dispatch)) then
-        return "Cast Dispatch (Finish)"
-      end
-    end
+    local result = attemptCast(S.Dispatch, "Cast Dispatch (Finish)")
+    if result then return result end
   end
 end
+
 
 local StealthCDs
 
